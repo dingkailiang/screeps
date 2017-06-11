@@ -16,10 +16,10 @@ module.exports = {
 
   run : function(creep){
       if (creep.memory.state == 'go' && creep.carry.energy == creep.carryCapacity){
-          creep.say('🛢️ put');
+          creep.say('ð¢ï¸ put');
           creep.memory.state = 'back';
       } else if (creep.memory.state == 'back' && creep.carry.energy == 0){
-          creep.say('🔄 take');
+          creep.say('ð take');
           creep.memory.state = 'go'
       }
 

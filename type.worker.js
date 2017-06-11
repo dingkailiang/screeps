@@ -11,7 +11,7 @@ var utility = require('utility');
 
 var roleConfig = {
     upgrader : {
-        word : '⚡ upgrade',
+        word : 'â¡ upgrade',
         working : ['maintain','upgrading']
     },
 
@@ -48,7 +48,7 @@ module.exports = {
             creep.say(config.word);
             creep.memory.state = 'working';
         } else if (creep.memory.state == 'working' && creep.carry.energy == 0)
-            creep.say('🍔 eat');
+            creep.say('ð eat');
             creep.memory.state = 'eating'
         }
 

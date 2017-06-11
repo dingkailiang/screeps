@@ -7,10 +7,10 @@ module.exports = {
 
     run : function(creep){
         if (creep.memory.state == 'eating' && creep.carry.energy == creep.carryCapacity){
-            creep.say('⚡ upgrade');
+            creep.say('â¡ upgrade');
             creep.memory.state = 'working';
         } else if (creep.memory.state == 'working' && creep.carry.energy == 0){
-            creep.say('🍔 eat');
+            creep.say('ð eat');
             creep.memory.state = 'eating'
         }
 
