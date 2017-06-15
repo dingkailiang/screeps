@@ -8,26 +8,29 @@
  */
 
 module.exports = {
-    getPropWithDefault(object,subset){
+    getPropWithDefault : function(object,subset){
         ret = {};
+        if (!object[subset]){
+            return object.default;
+        }
         for (let prop in object.default){
             let value = object[subset][prop];
             if (value === undefined){
                 value = object.default[prop];
             }
-            ret[prop] = value;
+            ret[prop] = _.cloneDeep(value);
         }
         return ret;
     },
 
-    function initProp(object,prop,init){
+    initProp : function(object,prop,init){
         if(!object[prop]){
             object[prop] = init;
         }
     },
 
 
-    function getPropRecursively(object,propArray,defret){
+    getPropRecursively : function(object,propArray,defret){
         for (let prop of propArray){
             object = object[prop];
             if (object === undefined){
