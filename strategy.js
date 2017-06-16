@@ -10,12 +10,7 @@
 var config = require('config');
 var utility = require('utility');
 
-for (let room in config.rooms){
-    let supplies = config.rooms[room].supplies
-    for (let remote in supplies){
-        Game.rooms[remote||room].memory.supply = supplies[remote].default.id;
-    }
-}
+
 
 module.exports = {
     stat : {rooms : {}},
@@ -24,10 +19,21 @@ module.exports = {
 
     getStat : function(data){
         // stat
+        if (data.type == 'worker'){
+            this.getStatWorker(data);
+        } else {
+            //this.getStatFighter(data);
+
+        }
+    },
+
+    getStatWorker : function(data){
+        // stat
         let room = data.home;
         let role = data.role;
         utility.initProp(this.stat.rooms,room,{});
         let roomStat = this.stat.rooms[room];
+
 
         // count roles assign on each object
         for (let type of ['remote','source','container']){
@@ -45,8 +51,7 @@ module.exports = {
 
     fillQueue : function(spawn){
         var result;
-        utility.initProp(spawn.memory,'queue',[]);
-        var queue = spawn.memory.queue;
+        var queue = spawn.room.memory.queue;
         var roomName = spawn.room.name;
 
         for (let func of [this.jumpQueue,this.fillProducer,this.fillConsumer]){
@@ -55,7 +60,7 @@ module.exports = {
     },
 
     jumpQueue : function(queue,roomName){
-        return
+        return;
     },
 
     fillConsumer : function(queue,roomName){
@@ -116,21 +121,6 @@ module.exports = {
                 let sourceStrategy = strategy.sources[remote][sourceId];
                 if (sourceStrategy.method === 'container'){
                     for (let containerId of sourceStrategy.containers){
-                        role = remote ? "remoteMover" : 'mover';
-                        let currentMover = utility.getPropRecursively(roomStat,['container',containerId,role],0);
-                        if (currentMover < sourceStrategy[role]){
-                            let data = {
-                                type : 'worker',
-                                role : role,
-                                container : containerId,
-                                home : roomName,
-                                state : 'eating',
-                                remote : remote,
-                                supplyType : 'container'
-                            };
-                            queue.unshift(JSON.stringify(data));
-                        }
-
                         role = remote ? "remoteMiner" : 'miner';
                         let currentMiner = utility.getPropRecursively(roomStat,['container',containerId,role],0);
                         if (currentMiner < 1){
@@ -143,9 +133,28 @@ module.exports = {
                                 state : 'eating',
                                 remote : remote,
                                 supplyType : 'source'
+                              };
+                              queue.unshift(JSON.stringify(data));
+                        }
+
+                        role = remote ? "remoteMover" : 'mover';
+                        let currentMover = utility.getPropRecursively(roomStat,['container',containerId,role],0);
+                        while (currentMover < sourceStrategy[role]){
+                            let data = {
+                                type : 'worker',
+                                role : role,
+                                container : containerId,
+                                home : roomName,
+                                state : 'eating',
+                                remote : remote,
+                                supplyType : 'container'
                             };
                             queue.unshift(JSON.stringify(data));
+                            ++currentMover;
+
                         }
+
+
                     }
                 }
             }

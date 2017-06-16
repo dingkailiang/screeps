@@ -64,13 +64,74 @@ Creep.prototype.go = function(target){
             opacity: .1
         }
     };
+    opt.ignoreCreeps = this.memory.ignoreCreeps;
+    opt.reusePath = 10;
+    this.moveTo(target,opt);
+}
 
-    if (this.memory.remote){
-        opt.ignoreCreeps = true;
-        opt.reusePath = 100;
+Creep.prototype.randomWalk = function(){
+    if (_.some(this.pos.lookFor(LOOK_STRUCTURES),(s)=>s.structureType === STRUCTURE_ROAD)){
+        let direction = _.random(1,8);
+        this.move(direction);
     }
 
-    this.moveTo(target,opt);
+}
+/*##############################################################################
+                                COMMON ACTIONS
+##############################################################################*/
+
+Creep.prototype.maintain = function(){
+    var carrySum = _.sum(this.carry)
+    var targets;
+    if (this.name == 'Caroline'){console.log('here')}
+    if (carrySum < this.carryCapacity){
+        targets = this.pos.lookFor(LOOK_RESOURCES);
+        if (targets.length > 0){
+            this.do(this.pickup,[targets[0]]);
+        }
+    }
+    if (carrySum > 0){
+        targets = this.pos.lookFor(LOOK_STRUCTURES);
+        targets = _.filter(targets,
+            (s) => s.hits < s.hitsMax &&
+            s.structureType != STRUCTURE_RAMPART);
+        if (targets.length > 0){
+            this.do(this.repair,[targets[0]]);
+        }
+    }
+    return false;
+}
+
+Creep.prototype.eat = function(){
+    if (_.sum(this.carry) == this.carryCapacity){
+        return false;
+    }
+
+    var targetId = this.memory[this.memory.supplyType];
+    var eatFunc;
+    var target = Game.getObjectById(targetId)
+
+    if (!target) {
+        return false;
+    }
+    var args = [target];
+    if (this.memory.supplyType == 'source'){
+        eatFunc = this.harvest;
+    }  else {
+        let sourceEnergy = (target.store && target.store.energy) || 0;
+        if (sourceEnergy === 0){
+            if (this.carry.energy > 0){
+                this.memory.state = 'working';
+            } else {
+                this.randomWalk();
+            }
+            return false;
+        }
+        eatFunc = this.withdraw;
+        args.push(RESOURCE_ENERGY);
+    }
+    this.do(eatFunc,args);
+    return false;
 }
 
 /*##############################################################################
@@ -135,6 +196,13 @@ Creep.prototype.upgrading = function(){
     return true;
 }
 
+Creep.prototype.upgradingStatic = function(){
+    var targetId = this.memory[this.memory.supplyType];
+    var target = Game.getObjectById(targetId);
+    this.do(this.withdraw,[target,RESOURCE_ENERGY]);
+    this.do(this.upgradeController,[this.room.controller]);
+}
+
 
 Creep.prototype.building = function(){
     var target = this.pos.findClosestByPath(FIND_MY_CONSTRUCTION_SITES);
@@ -160,79 +228,31 @@ Creep.prototype.roadkeep = function(){
     return false;
 }
 
-/*##############################################################################
-                                COMMON ACTIONS
-##############################################################################*/
 
-Creep.prototype.maintain = function(){
-    var carrySum = _.sum(this.carry)
-    if (carrySum > 0){
-        var targets = this.pos.lookFor(LOOK_STRUCTURES);
-        targets = _.filter(targets,
-            (s) => s.hits < s.hitsMax &&
-            s.structureType != STRUCTURE_RAMPART);
-        if (targets.length > 0){
-            this.do(this.repair,[targets[0]]);
-        }
-    }
-
-    if (carrySum < this.carryCapacity){
-        targets = this.pos.lookFor(LOOK_RESOURCES);
-        if (targets.length > 0){
-            this.do(this.pickup,[targets[0]]);
-        }
-    }
-    return false;
-}
-
-Creep.prototype.eat = function(){
-    if (_.sum(this.carry) == this.carryCapacity){
-        return false;
-    }
-
-    var targetId = this.memory[this.memory.supplyType];
-    var eatFunc;
-    var target = Game.getObjectById(targetId)
-
-    if (!target) {
-        return false;
-    }
-    var args = [target];
-    if (this.memory.supplyType == 'source'){
-        eatFunc = this.harvest;
-    }  else {
-        let sourceEnergy = (target.store && target.store.energy) || 0;
-        if (sourceEnergy === 0){
-            if (this.carry.energy > 0){
-                this.memory.state = 'working';
-            }
-            return false;
-        }
-        eatFunc = this.withdraw;
-        args.push(RESOURCE_ENERGY);
-    }
-    this.do(eatFunc,args);
-    return true;
-}
 
 /*##############################################################################
                               RESOURCES CONTROLL
 ##############################################################################*/
-Creep.prototype.refill = function(){
-    var targets = this.room.find(FIND_MY_STRUCTURES,{
-        filter : (s) => s.structureType == STRUCTURE_STORAGE && s.store.energy > 0
+Creep.prototype.fillAround = function(){
+    targets = this.pos.findInRange(FIND_MY_STRUCTURES,1,{
+        filter :
+            (s) => (s.structureType ==  STRUCTURE_SPAWN ||
+            s.structureType == STRUCTURE_EXTENSION ||
+            s.structureType == STRUCTURE_TOWER ||
+            s.structureType == STRUCTURE_LINK) &&
+            (s.energy < s.energyCapacity ||
+            (s.store && s.store.energy < s.storeCapacity))
     });
 
     if (targets.length > 0){
-        this.do(this.withdraw,[targets[0],RESOURCE_ENERGY]);
+        this.do(this.transfer,[targets[0],RESOURCE_ENERGY]);
         return true;
     }
     return false;
 }
 
 Creep.prototype.fill = function(){
-    var room = Game.rooms[this.memory.home];
-    let targets = room.find(FIND_MY_STRUCTURES,{
+    let targets = this.room.find(FIND_MY_STRUCTURES,{
         filter :
             (s) => (s.structureType ==  STRUCTURE_SPAWN ||
             s.structureType == STRUCTURE_EXTENSION ||
@@ -250,7 +270,7 @@ Creep.prototype.fill = function(){
 
 Creep.prototype.store = function(){
     var room = this.room;
-    var supply = Game.getObjectById(room.memory.supply);
+    var supply = Game.getObjectById(Memory.supplies[this.room.name]);
     if (!supply){
         return false;
     }

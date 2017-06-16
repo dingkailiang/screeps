@@ -10,48 +10,70 @@
 var utility = require('utility');
 
 const roleConfig = {
+    roomkeeper : {
+        word : '⚖️ keep',
+        working : ['maintain','fillAround','fill','repairing','bricking'],
+        bodyParts : [WORK,CARRY,MOVE,MOVE],
+        priority : 7
+    },
     upgrader : {
         word : '⚡ upgrade',
-        working : ['maintain','upgrading']
+        working : ['maintain','upgrading'],
+        priority : 4,
+        ignoreCreeps : false
+    },
+
+    staticUpgrader : {
+        hasState : false,
+        word : '⚡ upgrade',
+        eating : ['upgradingStatic'],
+        priority : 4,
+        ignoreCreeps : false,
+        bodyBase : [CARRY,WORK,MOVE],
+        bodyParts : [WORK,WORK,MOVE]
     },
 
     miner : {
-        hasState : false,
         bodyParts : [WORK,WORK,MOVE],
-        working : ['mining'],
-        eating : ['mining']
+        bodyBase : [WORK,CARRY,MOVE],
+        working : ['maintain','mining'],
+        eating : ['maintain','mining'],
+        priority : 6
     },
 
     remoteMiner : {
         bodyParts : [WORK,WORK,MOVE],
         bodyBase : [WORK,CARRY,MOVE],
         working : ['maintain','mining'],
-        eating : ['remoting','mining']
+        eating : ['remoting','mining'],
+        priority : 3
     },
 
     mover : {
-        word : '🗑️ put',
-        working : ['maintain','fill','store'],
-        eating : ['maintain','eat','refill'],
+        word : '🚚 move',
+        working : ['maintain','fillAround','store'],
         bodyBase : [WORK,CARRY,MOVE],
-        bodyParts : [CARRY,CARRY,MOVE]
+        bodyParts : [CARRY,CARRY,MOVE],
+        priority : 5
     },
 
     remoteMover : {
-        word : '🗑️ put',
+        word : '🚚 move',
         working : ['maintain','homing','store'],
         eating : ['maintain','remoting','eat'],
         bodyBase : [WORK,CARRY,MOVE],
-        bodyParts : [CARRY,CARRY,MOVE]
+        bodyParts : [CARRY,CARRY,MOVE],
+        priority : 2
     },
 
     builder : {
         word : '🏗️ build',
-        working : ['maintain','building','upgrading']
+        working : ['maintain','building','upgrading'],
+        ignoreCreeps : false
     },
 
     harvester : {
-        word : '🗑️ put',
+        word : '🚚️ move',
         working : ['maintain','put']
     },
 
@@ -70,7 +92,8 @@ const roleConfig = {
     reserver : {
         hasState : false,
         eating : ['remoting','reserve'],
-        bodyParts : [CLAIM,MOVE]
+        bodyParts : [CLAIM,MOVE],
+        priority : 1
     },
 
     default : {
@@ -80,9 +103,12 @@ const roleConfig = {
         eating : ['maintain','eat'],
         bodyBase : [],
         bodyParts : [WORK,CARRY,MOVE],
+        priority : 0,
+        ignoreCreeps : true
     }
 
 }
+
 
 module.exports = {
     create : function(spawn,data){
@@ -98,7 +124,8 @@ module.exports = {
                 body.push(part);
             }
         }
-        spawn.createCreep(body,undefined,data);
+        data.ignoreCreeps = config.ignoreCreeps;
+        return spawn.createCreep(body,undefined,data);
     },
 
     run : function(creep){
@@ -119,5 +146,15 @@ module.exports = {
 
         creep.act(config[creep.memory.state]);
 
+    },
+
+    sortQueue : function(queue){
+        queue.sort(function(a,b){
+            let w1 = JSON.parse(a);
+            let w2 = JSON.parse(b);
+            let p1 = utility.getPropWithDefault(roleConfig,w1.role).priority;
+            let p2 = utility.getPropWithDefault(roleConfig,w2.role).priority;
+            return p2 - p1;
+        })
     }
 };

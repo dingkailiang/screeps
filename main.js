@@ -1,11 +1,19 @@
 require('prototype.creep');
 var config = require('config');
 var worker = require('type.worker');
-var utility = require('utility');
 var strategy = require('strategy');
+var sturcMethod = require('type.structure');
 
-var needFillQueue = true;
-Game.spawns['Spawn1'].queue = [];
+Memory.supplies = {};
+for (let room in config.rooms){
+    let supplies = config.rooms[room].supplies
+    for (let remote in supplies){
+        Memory.supplies[remote||room] = supplies[remote].default.id;
+    }
+    Game.rooms[room].memory.updateQueue = true;
+}
+
+
 module.exports.loop = function () {
 
     // collects data use by strategy
@@ -19,7 +27,7 @@ module.exports.loop = function () {
         // clean up memory
         if(!Game.creeps[name]) {
             delete Memory.creeps[name];
-            needFillQueue = true;
+            updateQueue = true;
             console.log('Clearing non-existing creep memory:', name);
         } else {
             let creep = Game.creeps[name];
@@ -48,65 +56,48 @@ module.exports.loop = function () {
             strategy.getStat(creep.memory);
         }
     }
+
 // Game.spawns['Spawn1'].createCreep([ATTACK,ATTACK,ATTACK,ATTACK,MOVE,MOVE,MOVE,MOVE],undefined,{type:'fighter'})
     // structure loop
     for (let name in Game.structures){
         let structure = Game.structures[name];
-        if (structure.structureType == STRUCTURE_SPAWN){
-            if (needFillQueue){
-                for (let info of structure.memory.queue){
-                    strategy.getStat(JSON.parse(info));
-                }
-                strategy.fillQueue(structure);
+        sturcMethod.run(structure);
+    }
+
+    // flag loop
+    for (let name in Game.flags){
+        let flag = Game.flags[name];
+        if (name == 'noCreeps'){
+            let creeps = flag.pos.look(LOOK_CREEPS);
+            for (let creep of creeps){
+                creep.randomWalk();
             }
-            if (structure.spawning){
-                var  spawningCreep = Game.creeps[structure.spawning.name];
-                structure.room.visual.text(
-                    "📢 " + spawningCreep.memory.role + " (" +
-                    Math.floor((structure.spawning.needTime - structure.spawning.remainingTime)/
-                    structure.spawning.needTime*100) + "%)",
-                    structure.pos.x + 1,
-                    structure.pos.y - 1,
-                    {align : 'left',opacity : 0.8}
-                );
-                continue;
-            } else if (
-              structure.room.energyAvailable == structure.room.energyCapacityAvailable &&
-              structure.memory.queue.length > 0)
-            {
-                let data = JSON.parse(structure.memory.queue.shift());
-                worker.create(structure,data);
-            }
-        } else if (structure.structureType == STRUCTURE_TOWER){
-            let tower = structure;
-            let closestHostile = tower.pos.findClosestByRange(FIND_HOSTILE_SPAWNS);
-            if (closestHostile){
-                tower.attack(closestHostile);
-                continue;
-            }
-            let creep = tower.pos.findClosestByRange(FIND_MY_CREEPS,{filter:(c)=>c.hits < c.hitsMax});
-            if (creep){
-                tower.heal(creep);
-                continue;
-            }
-/*
-            let strucs = tower.pos.findInRange(FIND_STRUCTURES,5,{
-                filter:(s)=>s.structureType != STRUCTURE_WALL &&
-                s.structureType != STRUCTURE_RAMPART &&
-                s.hits/s.hitsMax < 0.8
-            });
-            if (strucs.length > 0){
-                let struc = _.min(strucs,(s)=>s.hits/s.hitsMax);
-                tower.repair(struc);
-            }
-            */
         }
     }
 
-    if (needFillQueue){
-        needFillQueue = false;
+/*
+    var path = Game.rooms['E91N51'].findPath(
+        Game.getObjectById('59404d1cf3c9a06ceca2f53d').pos,
+        Game.getObjectById('593b1a18232f08c861f89bf6').pos,
+        { ignoreCreeps : true,
+          ignoreRoads: true
+        }
+    )
+    for (let p of path){
+        Game.rooms['E91N51'].visual.circle(p.x,p.y)
     }
-
-
-
+*/
+    for (let name in Game.rooms){
+        let room = Game.rooms[name];
+        room.visual.text(
+            "Energy: " + room.energyAvailable + "/" + room.energyCapacityAvailable,
+            0,1,
+            {
+                font : "bold 1 serif",
+                stroke : "#000",
+                color : "#17C02E",
+                align : "left"
+            }
+        );
+    }
 }
