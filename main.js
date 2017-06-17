@@ -3,6 +3,7 @@ var config = require('config');
 var worker = require('type.worker');
 var strategy = require('strategy');
 var sturcMethod = require('type.structure');
+var utility = require('utility');
 
 Memory.supplies = {};
 for (let room in config.rooms){
@@ -26,8 +27,8 @@ module.exports.loop = function () {
     for(let name in Memory.creeps) {
         // clean up memory
         if(!Game.creeps[name]) {
+            Game.rooms[Memory.creeps[name].home].memory.updateQueue = true;
             delete Memory.creeps[name];
-            updateQueue = true;
             console.log('Clearing non-existing creep memory:', name);
         } else {
             let creep = Game.creeps[name];
@@ -89,15 +90,31 @@ module.exports.loop = function () {
 */
     for (let name in Game.rooms){
         let room = Game.rooms[name];
+        var opt =
+        {
+            font : "bold 1 serif",
+            stroke : "#000",
+            color : "#17C02E",
+            align : "left"
+        };
         room.visual.text(
             "Energy: " + room.energyAvailable + "/" + room.energyCapacityAvailable,
-            0,1,
-            {
-                font : "bold 1 serif",
-                stroke : "#000",
-                color : "#17C02E",
-                align : "left"
-            }
+            0,1,opt
         );
+        var x = 0
+        var y = 3
+        let remotes = utility.getPropRecursively(strategy.stat,['rooms',name,'remote'],{});
+        for (let remoteName in remotes){
+            let remote = remotes[remoteName]
+            for (let role in remote){
+                if (role != 'count'){
+                    room.visual.text(
+                        role + ": " + remote[role],
+                        x,y,opt
+                    );
+                    y += 2;
+                }
+            }
+        }
     }
 }

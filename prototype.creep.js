@@ -7,7 +7,7 @@
  * mod.thing == 'a thing'; // true
  */
 
-
+var debug = "";
 
  /*##############################################################################
                                     BASIC API
@@ -20,6 +20,7 @@ Creep.prototype.do = function(func,args){
         this.go(args[0]);
     } else if (!(res == 0 || res == -4 || res == -6)) {
         console.log("creep "+ this.name + " error in do: " + res);
+        console.log(debug);
     }
 }
 
@@ -40,7 +41,7 @@ Creep.prototype.act = function(actions){
 ##############################################################################*/
 Creep.prototype.remoting = function(){
     if (this.room.name != this.memory.remote){
-        this.go(this.pos.findClosestByPath(this.room.findExitTo(this.memory.remote)))
+        this.go(this.pos.findClosestByRange(this.room.findExitTo(this.memory.remote)))
         return true;
     }
     return false;
@@ -48,7 +49,7 @@ Creep.prototype.remoting = function(){
 
 Creep.prototype.homing = function(){
     if (this.room.name != this.memory.home){
-        this.go(this.pos.findClosestByPath(this.room.findExitTo(this.memory.home)))
+        this.go(this.pos.findClosestByRange(this.room.findExitTo(this.memory.home)))
         return true;
     }
     return false;
@@ -69,12 +70,13 @@ Creep.prototype.go = function(target){
     this.moveTo(target,opt);
 }
 
-Creep.prototype.randomWalk = function(){
-    if (_.some(this.pos.lookFor(LOOK_STRUCTURES),(s)=>s.structureType === STRUCTURE_ROAD)){
-        let direction = _.random(1,8);
-        this.move(direction);
+Creep.prototype.checkBlock = function(){
+    var creeps = this.pos.findInRange(FIND_MY_CREEPS,1,{
+        filter : (c) => c.name != this.name
+    });
+    if (creeps.length > 0){
+        this.move(this.pos.getDirectionTo(creeps[_.random(creeps.length-1)]));
     }
-
 }
 /*##############################################################################
                                 COMMON ACTIONS
@@ -83,7 +85,6 @@ Creep.prototype.randomWalk = function(){
 Creep.prototype.maintain = function(){
     var carrySum = _.sum(this.carry)
     var targets;
-    if (this.name == 'Caroline'){console.log('here')}
     if (carrySum < this.carryCapacity){
         targets = this.pos.lookFor(LOOK_RESOURCES);
         if (targets.length > 0){
@@ -123,7 +124,7 @@ Creep.prototype.eat = function(){
             if (this.carry.energy > 0){
                 this.memory.state = 'working';
             } else {
-                this.randomWalk();
+                this.checkBlock();
             }
             return false;
         }
@@ -205,7 +206,7 @@ Creep.prototype.upgradingStatic = function(){
 
 
 Creep.prototype.building = function(){
-    var target = this.pos.findClosestByPath(FIND_MY_CONSTRUCTION_SITES);
+    var target = this.pos.findClosestByRange(FIND_MY_CONSTRUCTION_SITES);
     if (target){
         this.do(this.build,[target]);
         return true;
@@ -220,7 +221,7 @@ Creep.prototype.roadkeep = function(){
         s.structureType == STRUCTURE_ROAD
     });
     if (targets.length > 0){
-        let target = this.pos.findClosestByPath(targets);
+        let target = this.pos.findClosestByRange(targets);
         this.do(this.repair,[target]);
         return true;
     }
@@ -234,6 +235,9 @@ Creep.prototype.roadkeep = function(){
                               RESOURCES CONTROLL
 ##############################################################################*/
 Creep.prototype.fillAround = function(){
+    if (_.sum(this.carry) === 0){
+        return false;
+    }
     targets = this.pos.findInRange(FIND_MY_STRUCTURES,1,{
         filter :
             (s) => (s.structureType ==  STRUCTURE_SPAWN ||
@@ -261,7 +265,7 @@ Creep.prototype.fill = function(){
             (s.store && s.store.energy < s.storeCapacity))
     });
     if (targets.length > 0){
-        let target = this.pos.findClosestByPath(targets);
+        let target = this.pos.findClosestByRange(targets);
         this.do(this.transfer,[target,RESOURCE_ENERGY]);
         return true;
     }

@@ -26,7 +26,7 @@ const roleConfig = {
     staticUpgrader : {
         hasState : false,
         word : '⚡ upgrade',
-        eating : ['upgradingStatic'],
+        eating : ['maintain','upgradingStatic'],
         priority : 4,
         ignoreCreeps : false,
         bodyBase : [CARRY,WORK,MOVE],
@@ -125,7 +125,7 @@ module.exports = {
             }
         }
         data.ignoreCreeps = config.ignoreCreeps;
-        return spawn.createCreep(body,undefined,data);
+        return spawn.createCreep(body,data.role + _.random(999),data);
     },
 
     run : function(creep){

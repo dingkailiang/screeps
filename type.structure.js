@@ -41,7 +41,7 @@ module.exports = {
 
         } else if (spawn.room.memory.queue.length > 0){
             let data = JSON.parse(spawn.room.memory.queue[0]);
-            if (worker.create(spawn,data) === OK){
+            if (!(worker.create(spawn,data) < 0)){
                 spawn.room.memory.queue.shift()
             }
         }

@@ -24,9 +24,9 @@
         'E91N51' : {
             roles : {
                 '': {
-                    roomkeeper : 1,
-                    builder : 3,
-                    staticUpgrader : 1
+                    roomkeeper : 2,
+                    builder : 2,
+                    staticUpgrader : 2
                 },
 
                 'E92N51' :{
@@ -65,7 +65,7 @@
                     },
 
                     staticUpgrader : {
-                        id : '59441bced1b40e34709c42fb',
+                        id : '594424664c0ef1247a78a452',
                         type : 'link'
                     }
                 },
@@ -114,5 +114,62 @@ Memory = {
 
 /*
 stat
-{"rooms":{"E91N51":{"remote":{"":{"count":9,"mover":2,"miner":2,"upgrader":1,"roomkeeper":1,"builder":3},"E92N51":{"count":4,"remoteMiner":1,"remoteMover":2,"reserver":1}},"container":{"593b315f18122c7955a4a101":{"count":2,"mover":1,"miner":1},"593b1a18232f08c861f89bf6":{"count":2,"miner":1,"mover":1},"5940dce5529dc88f4795c597":{"count":4,"remoteMiner":1,"remoteMover":2,"reserver":1}},"source":{"58dbc55e8283ff5308a40585":{"count":1,"miner":1},"58dbc55e8283ff5308a40586":{"count":1,"miner":1},"58dbc5818283ff5308a40815":{"count":1,"remoteMiner":1}}}}}
+{"rooms":{
+    "E91N51":{
+        "remote":{
+            "":{
+                "count":9,
+                "mover":2,
+                "miner":2,
+                "upgrader":1,
+                "roomkeeper":1,
+                "builder":3
+            },
+
+            "E92N51":{
+                "count":4,
+                "remoteMiner":1,
+                "remoteMover":2,
+                "reserver":1
+            }
+        },
+        "container":{
+            "593b315f18122c7955a4a101":{
+                "count":2,
+                "mover":1,
+                "miner":1
+            },
+
+            "593b1a18232f08c861f89bf6":{
+                "count":2,
+                "miner":1,
+                "mover":1
+            },
+
+            "5940dce5529dc88f4795c597":{
+                "count":4,
+                "remoteMiner":1,
+                "remoteMover":2,
+                "reserver":1
+            }
+      },
+
+      "source":{
+          "58dbc55e8283ff5308a40585":{
+              "count":1,
+              "miner":1
+          },
+
+          "58dbc55e8283ff5308a40586":{
+              "count":1,
+              "miner":1
+          },
+
+          "58dbc5818283ff5308a40815":{
+              "count":1,
+              "remoteMiner":1}
+          }
+        }
+    }
+}
 */
