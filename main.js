@@ -1,27 +1,17 @@
 require('prototype.creep');
-var config = require('config');
-var worker = require('type.worker');
-var strategy = require('strategy');
-var sturcMethod = require('type.structure');
+require('prototype.structure');
 var utility = require('utility');
-
-Memory.supplies = {};
-for (let room in config.rooms){
-    let supplies = config.rooms[room].supplies
-    for (let remote in supplies){
-        Memory.supplies[remote||room] = supplies[remote].default.id;
-    }
+var roomConfig = require('config.rooms')
+for (let room in roomConfig){
     Game.rooms[room].memory.updateQueue = true;
 }
 
-
 module.exports.loop = function () {
+    // room loop
+    for (let name in Memory.rooms){
+        delete Memory.rooms[name].stat;
+    }
 
-    // collects data use by strategy
-    strategy.stat = {
-        rooms : {}
-    };
-    strategy.initMem;
 
     // creep loop
     for(let name in Memory.creeps) {
@@ -29,32 +19,21 @@ module.exports.loop = function () {
         if(!Game.creeps[name]) {
             Game.rooms[Memory.creeps[name].home].memory.updateQueue = true;
             delete Memory.creeps[name];
-            console.log('Clearing non-existing creep memory:', name);
+            //console.log('Clearing non-existing creep memory:', name);
         } else {
             let creep = Game.creeps[name];
-            // for role
-            let role = creep.memory.role;
-
+            if (creep.memory.supply == '594a3881954da02359e7ad1c' && creep.memory.role != 'upgraderC'){
+              creep.memory.supply = '594af2055659551f61c24688'
+            }
             if (!creep.spawning){
-                if (creep.memory.type == 'worker'){
-                    worker.run(creep);
-                } else if (creep.memory.type == 'fighter'){
-                    let target = creep.pos.findClosestByPath(FIND_HOSTILE_STRUCTURES,{
-                        filt : (c) => c.structureType == STRUCTURE_RAMPART
-                    });
-                    if (target){
-                        if (creep.attack(target) == ERR_NOT_IN_RANGE){
-                            creep.moveTo(target);
-                        }
-                    } else {
-                        creep.moveTo(Game.flags['target']);
-                    }
-                } else {
-                    console.log('No handle for type' + creep.memory.type);
-                }
+                creep.run();
+            } else {
+                utility.initProp(creep.memory,'timer',0);
+                ++creep.memory.timer;
             }
 
-            strategy.getStat(creep.memory);
+            creep.record();
+
         }
     }
 
@@ -62,19 +41,10 @@ module.exports.loop = function () {
     // structure loop
     for (let name in Game.structures){
         let structure = Game.structures[name];
-        sturcMethod.run(structure);
+        structure.run();
     }
 
-    // flag loop
-    for (let name in Game.flags){
-        let flag = Game.flags[name];
-        if (name == 'noCreeps'){
-            let creeps = flag.pos.look(LOOK_CREEPS);
-            for (let creep of creeps){
-                creep.randomWalk();
-            }
-        }
-    }
+
 
 /*
     var path = Game.rooms['E91N51'].findPath(
@@ -88,6 +58,7 @@ module.exports.loop = function () {
         Game.rooms['E91N51'].visual.circle(p.x,p.y)
     }
 */
+/*
     for (let name in Game.rooms){
         let room = Game.rooms[name];
         var opt =
@@ -103,7 +74,7 @@ module.exports.loop = function () {
         );
         var x = 0
         var y = 3
-        let remotes = utility.getPropRecursively(strategy.stat,['rooms',name,'remote'],{});
+        let remotes = room.memory.remote;
         for (let remoteName in remotes){
             let remote = remotes[remoteName]
             for (let role in remote){
@@ -117,4 +88,6 @@ module.exports.loop = function () {
             }
         }
     }
+    */
+
 }
