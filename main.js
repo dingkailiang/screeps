@@ -1,16 +1,30 @@
 require('prototype.creep');
 require('prototype.structure');
+require('Traveler');
 var utility = require('utility');
 var roomConfig = require('config.rooms')
 for (let room in roomConfig){
     Game.rooms[room].memory.updateQueue = true;
 }
+const profiler = require('screeps-profiler');
 
-module.exports.loop = function () {
-    // room loop
+//profiler.enable();
+module.exports.loop = function() {
+    profiler.wrap(function() {
+        main();
+    });
+}
+
+function main() {
+    // memory room
     for (let name in Memory.rooms){
-        delete Memory.rooms[name].stat;
+        if (!Game.rooms[name]){
+            delete Memory.rooms[name];
+        } else {
+            Memory.rooms[name].stat = {};
+        }
     }
+
 
 
     // creep loop
@@ -22,9 +36,6 @@ module.exports.loop = function () {
             //console.log('Clearing non-existing creep memory:', name);
         } else {
             let creep = Game.creeps[name];
-            if (creep.memory.supply == '594a3881954da02359e7ad1c' && creep.memory.role != 'upgraderC'){
-              creep.memory.supply = '594af2055659551f61c24688'
-            }
             if (!creep.spawning){
                 creep.run();
             } else {
@@ -36,8 +47,6 @@ module.exports.loop = function () {
 
         }
     }
-
-// Game.spawns['Spawn1'].createCreep([ATTACK,ATTACK,ATTACK,ATTACK,MOVE,MOVE,MOVE,MOVE],undefined,{type:'fighter'})
     // structure loop
     for (let name in Game.structures){
         let structure = Game.structures[name];
@@ -58,7 +67,7 @@ module.exports.loop = function () {
         Game.rooms['E91N51'].visual.circle(p.x,p.y)
     }
 */
-/*
+
     for (let name in Game.rooms){
         let room = Game.rooms[name];
         var opt =
@@ -72,6 +81,7 @@ module.exports.loop = function () {
             "Energy: " + room.energyAvailable + "/" + room.energyCapacityAvailable,
             0,1,opt
         );
+        /*
         var x = 0
         var y = 3
         let remotes = room.memory.remote;
@@ -87,7 +97,8 @@ module.exports.loop = function () {
                 }
             }
         }
+        */
     }
-    */
+
 
 }

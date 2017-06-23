@@ -12,6 +12,36 @@ var roomConfig = require('config.rooms');
 var utility = require('utility');
 
 Structure.prototype.run = function(){}
+
+Structure.prototype.changeState = function(){
+    let store = this.energy || _.sum(this.store||[]);
+    utility.initProp(Memory,'needFill',{});
+    if (store > 0.9*(this.storeCapacity || this.energyCapacity)){
+        Memory.needFill[this.id] = false;
+    } else if (store < 100){
+        Memory.needFill[this.id] = true;
+    }
+}
+
+Structure.prototype.full = function(){
+    if (this.store){
+        return _.sum(this.store) === this.storeCapacity;
+    } else if (this.energy){
+        return this.energy === this.energyCapacity;
+    } else {
+        return undefined;
+    }
+}
+
+Structure.prototype.empty = function(){
+    if (this.store){
+        return _.sum(this.store) === 0;
+    } else if (this.energy){
+        return this.energy === 0;
+    } else {
+        return undefined;
+    }
+}
 /*##############################################################################
                                   SPAWN
 ##############################################################################*/
@@ -145,19 +175,22 @@ StructureTower.prototype.run = function(){
         this.heal(creep);
         return;
     }
-    /*
-    if (Game.getObjectById().store.energy < 300000){
-        return;
-    }
 
-    let strucs = this.room.find(FIND_STRUCTURES,{
-        filter:(s)=>s.structureType != STRUCTURE_ROAD &&
-        s.hits < s.hitsMax
+    let hits = roomConfig[this.room.name].rampart;
+    let strucs = this.room.find(FIND_MY_STRUCTURES,{
+        filter:(s)=>s.structureType  == STRUCTURE_RAMPART &&
+        s.hits < hits
     });
 
     if (strucs.length > 0){
-        let struc = _.min(strucs,(s)=>s.hits);
-        this.repair(struc);
+        this.repair(strucs[0]);
     }
-    */
+
+
+}
+/*##############################################################################
+                                container
+##############################################################################*/
+StructureContainer.prototype.full = function(){
+    return _.sum(this.store) > 0.7 * this.storeCapacity
 }

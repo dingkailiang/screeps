@@ -52,7 +52,7 @@ module.exports = {
     },
 
     mover : {
-        working : ['maintain','store','checkBlock'],
+        working : ['maintain','store'],
         bodyBase : [WORK,CARRY,MOVE],
         bodyParts : [CARRY,CARRY,MOVE],
         ignoreCreeps : true,
@@ -62,7 +62,7 @@ module.exports = {
 
     moverR : {
         eating : ['maintain','remoting','eat'],
-        working : ['maintain','store','checkBlock'],
+        working : ['maintain','store'],
         bodyBase : [WORK,CARRY,MOVE],
         bodyParts : [CARRY,CARRY,MOVE],
         ignoreCreeps : true,
@@ -70,11 +70,12 @@ module.exports = {
     },
 
     roomKeeper : {
-        working : ['maintain','fill','upgrading','checkBlock'],
+        working : ['maintain','fill','upgrading'],
         priority : 0,
         bodyBase : [WORK,CARRY,MOVE],
         bodyParts : [CARRY,CARRY,MOVE],
-        timer : 100
+        timer : 100,
+        ignoreCreeps : true
     },
 
     upgrader : {
@@ -83,11 +84,11 @@ module.exports = {
     },
 
     upgraderF : {
-        changeState : 'changeStateDefault',
-        eating : ['maintain','eat','flaging'],
-        working : ['maintain','building','flaging','upgrading'],
+        changeState : 'changeStateNone',
+        eating : ['maintain','NotOnRoad','upgrading','eat'],
         bodyBase : [WORK,CARRY,MOVE],
-        bodyParts : [WORK,WORK,MOVE]
+        bodyParts : [WORK,WORK,MOVE],
+        dynamic : false
     },
 
     upgraderC : {
@@ -100,14 +101,14 @@ module.exports = {
     },
 
     builder : {
-        working : ['maintain','building','upgrading','checkBlock'],
-        eating : ['maintain','eat','checkBlock'],
+        working : ['maintain','building','upgrading'],
+        eating : ['maintain','eat'],
         bodyParts : [WORK,CARRY,MOVE]
     },
 
     builderR : {
         eating : ['maintain','remoting','eat'],
-        working : ['maintain','building','store','checkBlock'],
+        working : ['maintain','building','store'],
         bodyParts : [WORK,CARRY,MOVE]
     },
 
@@ -124,17 +125,42 @@ module.exports = {
         priority : 5
     },
 
+    claimer : {
+        bodyBase : [CLAIM,MOVE],
+        bodyParts : [],
+        eating : ['remoting','claim'],
+        changeState : 'changeStateNone',
+        priority : 0
+    },
+
     attacker : {
         bodyParts : [ATTACK,MOVE],
         eating : ['attacking','flaging'],
         changeState : 'changeStateNone',
-        flag : COLOR_RED
+        flag : COLOR_RED,
+        ignoreCreeps:true
+    },
+
+    tank : {
+        bodyParts : [MOVE,TOUGH],
+        changeState : 'changeStateNone',
+        eating : ['flaging'],
+        flag : COLOR_BROWN,
+        ignoreCreeps : true
+    },
+
+    healer : {
+        bodyParts : [MOVE,HEAL],
+        changeState : 'changeStateNone',
+        eating : ['healing','flaging'],
+        flag : COLOR_GREEN,
+        ignoreCreeps : true
     },
 
 
     default : {
         working : [],
-        eating : ['maintain','eat','checkBlock'],
+        eating : ['maintain','eat'],
         standby : ['standby'],
         fighting : ['march','attacking'],
         bodyBase : [],

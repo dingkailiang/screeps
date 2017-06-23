@@ -18,6 +18,7 @@
 
  module.exports = {
     'E97S68' : {
+        rampart : 10000,
         flag : COLOR_WHITE,
         storage : {
             '' : '594af2055659551f61c24688',
@@ -26,6 +27,15 @@
         },
 
         supplies : {
+            '58dbc6678283ff5308a41f11' : {
+                remote : 'E99S67',
+                mehtod : 'harvest',
+                assign :{
+                    claimer : 0,
+                    builderR : 0
+                }
+            },
+
             '58dbc6248283ff5308a41a04' : {
                 method : 'harvest',
                 assign : {
@@ -60,9 +70,9 @@
             '594af2055659551f61c24688': {
                 method : 'withdraw',
                 assign : {
-                    builder : 3,
+                    builder : 0,
                     bricker : 1,
-                    roomKeeper : 1
+                    roomKeeper : 2
                 }
             },
 
@@ -71,6 +81,7 @@
                 method : 'withdraw',
                 assign : {
                     upgraderC : 1,
+                    upgraderF : 4
                 }
             },
 
@@ -115,8 +126,7 @@
                 method : 'harvest',
                 remote : 'E97S67',
                 assign : {
-                    minerR : 1,
-                    reserver : 1
+                    minerR : 1
                 }
             },
 
@@ -124,7 +134,7 @@
                 method : 'withdraw',
                 remote : 'E97S67',
                 assign : {
-                    moverR : 3
+                    moverR : 2
                 }
             },
 
@@ -135,7 +145,8 @@
                 method : 'harvest',
                 remote : 'E97S67',
                 assign : {
-                    minerR : 1
+                    minerR : 1,
+                    reserver : 1
                 }
             },
 
@@ -143,7 +154,7 @@
                 method : 'withdraw',
                 remote : 'E97S67',
                 assign : {
-                    moverR : 2
+                    moverR : 1
                 }
             }
             //

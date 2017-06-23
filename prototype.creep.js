@@ -80,20 +80,13 @@ Creep.prototype.record = function(){
                                       MOVEMENT
 ##############################################################################*/
 Creep.prototype.remoting = function(){
-    if (this.room.name != this.memory.remote){
-        this.go(this.pos.findClosestByPath(this.room.findExitTo(this.memory.remote)))
+    if (!Game.rooms[this.memory.remote]){
+        this.go(new RoomPosition(25,25,this.memory.remote));
         return true;
     }
     return false;
 }
 
-Creep.prototype.homing = function(){
-    if (this.room.name != this.memory.home){
-        this.go(this.pos.findClosestByPath(this.room.findExitTo(this.memory.home)))
-        return true;
-    }
-    return false;
-}
 
 Creep.prototype.go = function(target){
     var opt = {
@@ -106,37 +99,51 @@ Creep.prototype.go = function(target){
         }
     };
     opt.ignoreCreeps = utility.getPropWithDefault(roleConfig,this.memory.role).ignoreCreeps;
-    opt.reusePath = 10;
-    if (this.moveTo(target,opt)!=OK){
-        this.checkBlock();
-    }
+    opt.reusePath = 1000;
+    this.travelTo(target);
 }
 
 Creep.prototype.checkBlock = function(){
-    var creeps = this.pos.findInRange(FIND_MY_CREEPS,1,{
-        filter : (c) => c.name != this.name && utility.getPropWithDefault(roleConfig,c.memory.role).dynamic
-    });
+    /*
+    var creeps = this.pos.findInRange(FIND_MY_CREEPS,1);
+    creeps = _.filter(creeps, (c) => c.name != this.name && utility.getPropWithDefault(roleConfig,c.memory.role).dynamic);
     if (creeps.length > 0){
         this.move(this.pos.getDirectionTo(creeps[_.random(creeps.length-1)]));
+    }
+    */
+}
+Creep.prototype.NotOnRoad = function(){
+    target = Game.getObjectById(this.memory.supply);
+    if (this.pos.lookFor(LOOK_STRUCTURES).length == 0 && this.pos.isNearTo(target.pos)){
+        return;
+    }
+
+    let x = target.pos.x
+    let y =target.pos.y
+    for (let i of [-1,0,1]){
+        for(let j of [-1,0,1]){
+            let p  = new RoomPosition(x+i,y+j,this.memory.home);
+            if (p.lookFor(LOOK_CREEPS).length == 0 && p.lookFor(LOOK_STRUCTURES).length == 0){
+                this.go(p);
+                return true;
+            }
+        }
     }
 }
 
 Creep.prototype.flaging = function(){
     var color1 = roomConfig[this.memory.home].flag;
     var color2 = utility.getPropWithDefault(roleConfig,this.memory.role).flag;
-    if (this.pos.lookFor(LOOK_FLAGS).length > 0 ){
+    var flags = this.pos.lookFor(LOOK_FLAGS);
+    if (flags.length > 0 ){
         return;
     }
-    var flags = _.filter(Game.flags,(f) =>
+    flags = _.filter(Game.flags,(f) =>
         f.color == color1 &&
         f.secondaryColor== color2
     );
     if (flags.length > 0){
         this.go(flags[0]);
-    } else{
-        console.log(this.name + ' found no flag!');
-        console.log(''+color1+color2)
-        return;
     }
 }
 /*##############################################################################
@@ -175,7 +182,9 @@ Creep.prototype.eat = function(){
         console.log(this.name + ' no target found in eat');
     }
     if ((target.store && target.store.energy == 0) ||target.energy == 0){
-        this.go(target);
+        if (!this.pos.isNearTo(target.pos)){
+            this.go(target);
+        }
         return;
     }
     var method = roomConfig[this.memory.home].supplies[this.memory.supply].method;
@@ -209,9 +218,7 @@ Creep.prototype.mining = function(){
 }
 
 Creep.prototype.reserve = function(){
-    if (this.do(this.reserveController,[this.room.controller]) == OK){
-        this.checkBlock();
-    }
+    this.do(this.reserveController,[Game.rooms[this.memory.remote].controller]);
 },
 
 Creep.prototype.containerControll = function(){
@@ -220,16 +227,8 @@ Creep.prototype.containerControll = function(){
         console.log(this.name = ' found no container in CC method');
         return;
     }
-    let store = _.sum(target.store);
-    utility.initProp(Memory,'needFill',{});
-    if (store > 0.9*target.storeCapacity){
-        Memory.needFill[target.id] = false;
-    } else if (store < 100){
-        Memory.needFill[target.id] = true;
-    }
+    target.changeState();
 }
-
-
 
 Creep.prototype.bricking = function(){
     var room = this.memory.remote
@@ -239,8 +238,7 @@ Creep.prototype.bricking = function(){
     var targets = Game.rooms[room].find(FIND_STRUCTURES,{
         filter:(s) => s.hits < s.hitsMax &&
         (
-            s.structureType == STRUCTURE_WALL ||
-            s.structureType == STRUCTURE_RAMPART
+            s.structureType == STRUCTURE_WALL
         )
     });
 
@@ -266,7 +264,6 @@ Creep.prototype.building = function(){
         //,{filter : (c) => c.pos.lookFor(LOOK_CREEPS).length == 0}
     );
     if (targets.length){
-        this.checkBlock();
         var target;
         if (this.room.name == room){
             target = this.pos.findClosestByRange(targets);
@@ -280,19 +277,7 @@ Creep.prototype.building = function(){
     }
 }
 
-Creep.prototype.roadkeep = function(){
-    var targets = this.room.find(FIND_STRUCTURES,{
-        filter:(s) => s.hits < s.hitsMax &&
-        s.structureType == STRUCTURE_ROAD
-    });
-    if (targets.length > 0){
-        let target = this.pos.findClosestByRange(targets);
-        this.do(this.repair,[target]);
-        return true;
-    }
-    console.log('mission complete');
-    return false;
-}
+
 
 Creep.prototype.immigrate = function(){
     this.memory.home = this.room.name;
@@ -309,9 +294,8 @@ Creep.prototype.findContainer = function(){
             console.log(this.name + ' no supply found in findContainer');
             return;
         }
-        var containers = supply.pos.findInRange(FIND_STRUCTURES,1,{
-            filter : (s) => s.structureType == STRUCTURE_CONTAINER
-        });
+        var containers = supply.pos.findInRange(FIND_STRUCTURES,1);
+        containers = _.filter(containers,(s) => s.structureType == STRUCTURE_CONTAINER);
 
         if (containers.length > 0){
             this.memory.target = containers[0].id;
@@ -327,42 +311,29 @@ Creep.prototype.findContainer = function(){
 /*##############################################################################
                               RESOURCES CONTROLL
 ##############################################################################*/
-Creep.prototype.fillAround = function(){
-    if (_.sum(this.carry) === 0){
-        return false;
-    }
-    targets = this.pos.findInRange(FIND_STRUCTURES,1,{
-        filter :
-            (s) => (s.structureType ==  STRUCTURE_SPAWN ||
-            s.structureType == STRUCTURE_EXTENSION ||
-            s.structureType == STRUCTURE_TOWER ||
-            s.structureType == STRUCTURE_LINK ||
-            s.structureType == STRUCTURE_CONTAINER) &&
-            (s.energy < s.energyCapacity ||
-            (s.store && s.store.energy < s.storeCapacity))
-    });
-
+Creep.prototype.fill = function(){
+    var targets;
+    filterFunc =  (s) =>
+        (Memory.needFill[s.id] ||
+        s.structureType ==  STRUCTURE_SPAWN ||
+        s.structureType == STRUCTURE_EXTENSION) &&
+        (s.energy < s.energyCapacity ||
+        (s.store && s.store.energy < s.storeCapacity))
+    targets = this.pos.findInRange(FIND_STRUCTURES,1);
+    targets = _.filter(targets,filterFunc)
     if (targets.length > 0){
         this.do(this.transfer,[targets[0],RESOURCE_ENERGY]);
+        if (targets.length > 1 ) {return true;}
+    }
+    let targetId = this.memory.target;
+    if (targetId && !(Game.getObjectById(targetId).full())){
+        this.do(this.transfer,[Game.getObjectById(targetId),RESOURCE_ENERGY]);
         return true;
     }
-    return false;
-}
-
-Creep.prototype.fill = function(){
-    utility.initProp(Memory,'needFill',{});
-    let targets = this.room.find(FIND_STRUCTURES,{
-        filter :
-            (s) =>
-            Memory.needFill[s.id] ||(
-            s.structureType ==  STRUCTURE_SPAWN ||
-            s.structureType == STRUCTURE_EXTENSION ||
-            s.structureType == STRUCTURE_TOWER) &&
-            (s.energy < s.energyCapacity ||
-            (s.store && s.store.energy < s.storeCapacity))
-    });
+    targets = this.room.find(FIND_STRUCTURES,{filter : filterFunc});
     if (targets.length > 0){
-        let target = this.pos.findClosestByPath(targets);
+        let target = targets[_.random(targets.length-1)];
+        this.memory.target = target.id;
         this.do(this.transfer,[target,RESOURCE_ENERGY]);
         return true;
     }
@@ -415,12 +386,14 @@ Creep.prototype.march = function(){
 Creep.prototype.attacking = function(){
     const priority = [FIND_HOSTILE_CREEPS,FIND_HOSTILE_SPAWNS,FIND_HOSTILE_STRUCTURES];
     for (let type of priority){
-        var target = this.pos.findClosestByPath(type,{
+        var target = this.pos.findClosestByRange(type,{
             filter : (s) => s.structureType != STRUCTURE_CONTROLLER
         });
         if (target){
-            this.do(this.attack,[target]);
-            return true;
+            let ret = this.do(this.attack,[target]);
+            if ( ret == OK || ret == ERR_NOT_IN_RANGE){
+                return true;
+            }
         }
     }
 }
@@ -434,6 +407,19 @@ Creep.prototype.claiming = function(){
         flag.remove();
     } else {
         this.do(this.claimController,[controller])
+    }
+
+}
+
+
+Creep.prototype.healing = function(){
+    var creep = this.pos.findClosestByPath(FIND_MY_CREEPS,{
+        filter : (c) => c.hits < c.hitsMax
+    });
+
+    if (creep){
+        this.do(this.heal,[creep]);
+        return true;
     }
 
 }
